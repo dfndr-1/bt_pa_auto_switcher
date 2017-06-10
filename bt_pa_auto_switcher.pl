@@ -148,7 +148,7 @@ use Expect;
 use File::Basename;
 
 # WEBRTC VoiceEngine is Google Chat, Voice, and Talk.
-my $valid_clients = qr/(?:Skype|WEBRTC VoiceEngine)/;
+my $valid_clients = qr/(?:Skype|WEBRTC VoiceEngine|audacity)/;
 my $mute_corked = 1;
 my $whoami = basename $0;
 
@@ -159,6 +159,13 @@ my(%connections, %muted, $saved_volume);
 sub main_loop {
     my($exp, $patidx);
 
+	## Sometimes people use non-C on non-en_US locale
+	## When it's true, many regex will fail as paclt/pacmd
+	## are trying to speak with users using language they prefer.
+	## So, lets try to set $ENV{LC_ALL} to 'C'. As we know, this locale
+	## is always present and in most cases messages in C locale are written on English.
+	$ENV{LC_ALL}="C";
+
     my $start_time = time();
     while (($exp && ($patidx = $exp->expect(undef, '-re', '.*\n'))) ||
 	   $start_time) {
@@ -168,7 +175,7 @@ sub main_loop {
 	    if (time() - $start_time < 30) {
 		$exp = Expect->spawn('pactl', 'subscribe') or die;
 		$exp->log_user(0);
-		$exp->log_stdout(0);
+		$exp->log_stdout(1);
 		sleep(1);
 		next;
 	    }
